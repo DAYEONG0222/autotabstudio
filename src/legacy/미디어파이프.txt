@@ -1,0 +1,98 @@
+
+0. 코드 한줄한줄 보면서 생각나는데로 적어봤음
+0-1 항목마다 코드 일부를 적어둘거라 ctrl + f 로 찾아서 참고해주십사...
+0-2 ............은 생략으로
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+1. 일반적인 미디어파이프 구현은 프레임당 한번만 추론을 진행함 그러나 베이스의 보드는 색깔도 많고, 손그림자까지 있으면 미디어파이프가 손을 배경과 구분하지 못하는 경우가 있음
+
+이를 해결해기위해 조건부 재귀 추론 방식을 도입함
+analyze 내부
+enhanced_frame = self.preprocess_image(frame)
+mp_results = self.hands.process(cv2.cvtColor(enhanced_frame, cv2.COLOR_BGR2RGB))
+
+if not mp_results.multi_hand_landmarks:
+     mp_results = self.hands.process(cv2.cvtColor(adjust_gamma(enhanced_frame, 1.5), cv2.COLOR_BGR2RGB))
+
+위 코드는 인식의 회복 탄력성을 극대화시킴
+	1. preprocess_img를 거친 프레임으로 1차 인식
+	2. 만약 mp_results.multi_hand_landmarks가 none이라면 인식을 즉시 포기하지 않게 함
+	3, adjust_gamma(..., 1.5) 함수를 호출하여 이미지의 감마 값을 1.5배로 강제 부스팅함
+	4. 밝아진 이미지로 즉시 2차 추론을 수행함
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+2. 베이스는 빠른 속주를 포함하므로 프레임 상에서 손은 필연적으로 잔상을 동반함. 미디어 파이프의 기본 설정은 정확도를 위해 흐릿한 물체를 무시하는 경향이 있음.
+
+이를 위해 TH레스홀드를 과감히 낮춰 반응성을 우선시함
+
+# BassTabSystem 클래스
+self.hands = self.mp_hands.Hands(
+    static_image_mode=False,
+    max_num_hands=2,
+    model_complexity=1,
+    min_detection_confidence=0.3, #< 여기
+    min_tracking_confidence=0.3 # < 여기도 원래는 0.5였을거야
+)
+
+손일 확률이 30프로만 넘겨도 일단 데이터로 남기게 하는거
+여기서 낮은 신뢰도로 인해 발생하는 좌쵸의 떨림현상은 OneEuroFilter로 제어하도록 설계했음
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+3. 신호 노이즈 제거
+이게 곧 원유로 필터를 사용한거임
+
+# OneEuroFilter 클래스
+def filter(self, t, x):
+.....
+    dx = (x - self.x_prev) / t_e
+    dx_hat = self.exponential_smoothing(a_d, dx, self.dx_prev)
+    cutoff = self.min_cutoff + self.beta * abs(dx_hat) # 속도(dx)에 따라 cutoff 변경
+    a = self.smoothing_factor(t_e, cutoff)
+    x_hat = self.exponential_smoothing(a, x, self.x_prev)
+......
+    return x_hat
+
+손이 멈춰있을 경우 필터링 강도를 높여서 좌표를 단단하게 고정함
+빠르게 움직일때 (abs(dx_hat)< 변화량이 커지면 cutoff 주파수가 증가하여 필터링을 약하게 하고 원본 데이터를 거의 그대로 반영함
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+4. 시각적 관성 메모리 사용
+아무리 튜닝을 해도 연주중 손이 넥 뒤로 넘어가거나 앵글 밖으로 나가는 순간은 발생함
+이때 데이터가 널값이 나오면 추적이 끊긴것처럼 보임
+이것을 잔상기억알고리즘을 통해 이를 보완함
+
+# analyze 메소드 하단부
+if not is_tracking_success:
+    self.missing_frames_count += 1
+    if self.missing_frames_count <= self.MAX_MISSING_TOLERANCE and self.last_valid_fingers:
+        cv2.putText(frame, "MEMORY (Lost)", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 100, 100), 2)
+        for item in self.last_valid_fingers:
+            new_item = item.copy()
+            new_item['time_sec'] = round(current_time_sec, 3)
+            new_item['is_tracking'] = False # [중요] 추정값임을 마킹
+            detected_data_list.append(new_item)
+
+is_tracking_success가 False인 경우, 즉시 데이터를 비우지 않고 missing_frames_count를 증가시킴
+이 카운트가 허용치(MAX_MISSING_TOLERANCE, 약 30프레임당 1초) 이내라면, 가장 마지막으로 성공했던 손가락 데이터(self.last_valid_fingers)를 복제하여 현재 프레임의 결과로 반환함
+이게 착시 보정 기법이고, 딥러닝 모델의 간헐적 실패를 방어하는 장치로서 사용한다길래 씀
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+5. 동적 좌표 추적 시스템
+미디어파이프는 화면상의 절대 좌표만 준데, 근데 연주자는 가만히 않있잖아 그래서 프렛 계산이 다 틀어지고
+그래서 사용한게 발표때도 했던 루카스 카나데 알고리즘을 사용해서 기타 자체르 추적했음
+
+# BassTabSystem 클래스 내부
+def update_tracking(self, frame):
+.............
+    p1, status, error = cv2.calcOpticalFlowPyrLK(
+        self.prev_gray, frame_gray, self.corners, None, **self.lk_params
+    )
+    self.corners = p1 #기타의 4개 모서리 좌표를 업데이트
+    return p1.reshape(4, 2)
+
+초기에 사용자가 찍은 4개의 점(너트/바디) 주변의 픽셀 패턴 특징을 기억해서 다음 프레임에서 이 패턴이 어디로 이동했는지 미세하게 추적함. 이걸로 기타가 흔들려도 시스템상의 좌표계가 베이스를 따라다니게 됨

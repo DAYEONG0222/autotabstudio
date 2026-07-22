@@ -1,0 +1,33 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+
+# Local data and generated outputs
+data/**
+outputs/**
+!outputs/
+!outputs/portfolio_validation/
+!outputs/portfolio_validation/**
+Ultralytics/
+
+# Keep directory placeholders if they are added later.
+!data/**/.gitkeep
+!outputs/**/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
