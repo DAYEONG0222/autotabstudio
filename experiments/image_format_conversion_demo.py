@@ -8,7 +8,7 @@ from collections import Counter
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 
 # 이미지 폴더 경로
-image_dir = Path("C:/Users/82107/OneDrive/바탕 화면/多映/bass/bassimages")
+image_dir = Path("data/bassimages")
 resolutions = []
 
 for img_path in image_dir.rglob("*"):

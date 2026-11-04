@@ -277,8 +277,8 @@ def main():
         raise FileNotFoundError(args.video)
 
     # ---- FIXED WEIGHT PATHS (set your 2nd weights path!) ----
-    weights_path_1 = r"C:\Users\82107\OneDrive\바탕 화면\多映\2026\AutoTabStudio\weights.pt"
-    weights_path_2 = r"C:\Users\82107\OneDrive\바탕 화면\多映\2026\AutoTabStudio\weights_hands.pt"  # <-- CHANGE THIS
+    weights_path_1 = r"data/weights/weights.pt"
+    weights_path_2 = r"data/weights/weights_hands.pt"  # <-- CHANGE THIS
 
     if not os.path.exists(weights_path_1):
         raise FileNotFoundError(weights_path_1)

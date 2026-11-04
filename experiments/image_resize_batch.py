@@ -2,7 +2,7 @@ from PIL import Image
 from pathlib import Path
 
 # 원본 이미지 폴더 경로
-input_dir = Path("C:/Users/82107/OneDrive/바탕 화면/多映/bass/bassimages")
+input_dir = Path("data/bassimages")
 # 변환된 이미지 저장 폴더
 output_dir = input_dir / "resized_images"
 output_dir.mkdir(exist_ok=True)

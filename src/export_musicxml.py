@@ -6,7 +6,7 @@ import warnings
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# requests 寃쎄퀬 ?④?
+# requests 경고 숨김
 try:
     from requests import RequestsDependencyWarning
     warnings.filterwarnings("ignore", category=RequestsDependencyWarning)
@@ -33,7 +33,7 @@ def quantize_position(value: float, grid: float) -> float:
 
 def quantize_quarter_length(ql: float) -> float:
     """
-    MusicXML?먯꽌 ?덉쟾?섍쾶 ?쒗쁽 媛?ν븳 湲곕낯 ?뚭?濡??묒옄??
+    MusicXML에서 안전하게 표현할 수 있는 기본 음가로 양자화.
     """
     allowed = [
         4.0,   # whole
@@ -50,15 +50,15 @@ def quantize_quarter_length(ql: float) -> float:
 
 def split_into_expressible_lengths(ql: float) -> List[float]:
     """
-    ?꾩쓽??quarterLength瑜?MusicXML?먯꽌 ?쒗쁽 媛?ν븳 湲몄씠?ㅼ쓽 ?⑹쑝濡?遺꾪빐.
-    greedy 諛⑹떇.
+    임의의 quarterLength를 MusicXML에서 표현 가능한 길이들의 합으로 분해.
+    greedy 방식.
     """
     allowed = [4.0, 3.0, 2.0, 1.5, 1.0, 0.75, 0.5, 0.25]
 
     if ql <= 0:
         return []
 
-    # ?덈Т 吏㏃? 媛믪? 理쒖냼 16遺꾩쓬?쒕줈 泥섎━
+    # 너무 짧은 값은 최소 16분음표로 처리
     if ql < 0.25:
         return [0.25]
 
@@ -76,12 +76,12 @@ def split_into_expressible_lengths(ql: float) -> List[float]:
         out.append(chosen)
         remaining -= chosen
 
-        # 遺?숈냼?섏젏 ?덉젙??
+        # 부동소수점 오차 정리
         if abs(remaining) < 1e-6:
             remaining = 0.0
             break
 
-    # ?⑥? 議곌컖???덉쑝硫?媛??媛源뚯슫 ?덉쟾 ?뚭? ?섎굹濡?留덈Т由?
+    # 남은 조각이 있으면 가장 가까운 표현 가능 음가 하나로 마무리
     if remaining > 0.0:
         out.append(quantize_quarter_length(remaining))
 
@@ -199,7 +199,7 @@ def export_basic_musicxml_with_tab_hints(
         string_num = int(sn["string"])
         fret_num = int(sn["fret"])
 
-        # 1) rest ?쎌엯
+        # 1) rest 삽입
         if t_on > prev_t_off:
             rest_ql_raw = t_on - prev_t_off
             rest_parts = split_into_expressible_lengths(rest_ql_raw)
@@ -209,11 +209,11 @@ def export_basic_musicxml_with_tab_hints(
                 r.duration.quarterLength = rql
                 part.append(r)
 
-        # 2) note ?쎌엯
+        # 2) note 삽입
         note_ql_raw = max(rhythm_grid, t_off - t_on)
         note_parts = split_into_expressible_lengths(note_ql_raw)
 
-        # ?뚰몴媛 ?덈Т ?섍쾶 履쇨컻吏??嫄?留됯린 ?꾪빐 理쒖냼 ?섎굹??蹂댁옣
+        # 음표가 너무 잘게 쪼개져 사라지는 것을 막기 위해 최소 하나는 보장
         if not note_parts:
             note_parts = [rhythm_grid]
 
@@ -221,7 +221,7 @@ def export_basic_musicxml_with_tab_hints(
             n = note.Note(pitch)
             n.duration.quarterLength = ql
 
-            # 泥??뚰몴?먮쭔 string/fret ?뺣낫 ?쒓린
+            # 첫 음표 조각에만 string/fret 정보 표기
             if i == 0:
                 add_string_fret_lyrics(n, string_num, fret_num)
                 txt = expressions.TextExpression(f"str {STRING_NAMES[string_num]} fret {fret_num}")
@@ -269,8 +269,8 @@ def inject_tab_technical_to_musicxml(
 
         solved = solved_notes[solved_idx]
 
-        # lyric/text媛 遺숈? "泥??뚰몴 議곌컖"?먮쭔 technical ?쎌엯?섎룄濡?
-        # lyric ?덈뒗 note留?index 利앷?
+        # lyric/text가 붙은 '첫 음표 조각'에만 technical을 넣도록
+        # lyric이 있는 note만 index 증가
         lyric_elem = note_elem.find("m:lyric", ns) if ns else note_elem.find("lyric")
         if lyric_elem is None:
             continue

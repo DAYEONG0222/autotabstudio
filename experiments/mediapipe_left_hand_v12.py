@@ -26,7 +26,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # Segmentation 모델 (손, 너트, 프렛 인식용)
 seg_model = YOLO(
-    r'C:\Users\82107\OneDrive\바탕 화면\多映\2026\AutoTabStudio\weights.pt'
+    r'data/weights/weights.pt'
 ).to(device)
 
 hands_mp = mp_hands.Hands(
@@ -225,7 +225,7 @@ def stabilize_tip(t, tip_idx, raw_pt, hand_mask):
 
 # [5] 메인 루프 실행부
 cap = cv2.VideoCapture(
-    r'C:\Users\82107\OneDrive\바탕 화면\多映\2026\AutoTabStudio\test_video6.mp4'
+    r'data/videos/test_video6.mp4'
 )
 width, height = int(cap.get(3)), int(cap.get(4))
 
@@ -237,7 +237,7 @@ if fps == 0:
     fps = 30  # fallback
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-output_path = r'C:\Users\82107\OneDrive\바탕 화면\多映\2026\AutoTabStudio\output_result.mp4'
+output_path = r'outputs/output_result.mp4'
 out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 print(f"🎬 결과 영상 저장 시작: {output_path}")
 
