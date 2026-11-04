@@ -141,8 +141,17 @@ def _load_music21():
     }
 
 
+# 내부 줄 번호는 1=E(가장 낮은 줄) ... 4=G 이다.
+STRING_NAMES = {1: "E", 2: "A", 3: "D", 4: "G"}
+
+
+def to_musicxml_string(string_num: int, num_strings: int = 4) -> int:
+    """MusicXML은 가장 높은 줄을 1번으로 센다(4현 베이스: 1=G ... 4=E)."""
+    return num_strings + 1 - int(string_num)
+
+
 def add_string_fret_lyrics(n, string_num: int, fret_num: int):
-    n.lyric = f"S{string_num} F{fret_num}"
+    n.lyric = f"{STRING_NAMES[string_num]} {fret_num}"
 
 
 def export_basic_musicxml_with_tab_hints(
@@ -215,7 +224,7 @@ def export_basic_musicxml_with_tab_hints(
             # 泥??뚰몴?먮쭔 string/fret ?뺣낫 ?쒓린
             if i == 0:
                 add_string_fret_lyrics(n, string_num, fret_num)
-                txt = expressions.TextExpression(f"str {string_num} fret {fret_num}")
+                txt = expressions.TextExpression(f"str {STRING_NAMES[string_num]} fret {fret_num}")
                 n.expressions.append(txt)
 
             part.append(n)
@@ -284,7 +293,7 @@ def inject_tab_technical_to_musicxml(
             technical = ET.SubElement(notations, "technical")
 
         string_el = ET.SubElement(technical, "string")
-        string_el.text = str(string_num)
+        string_el.text = str(to_musicxml_string(string_num))
 
         fret_el = ET.SubElement(technical, "fret")
         fret_el.text = str(fret_num)
