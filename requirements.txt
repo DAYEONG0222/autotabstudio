@@ -6,13 +6,16 @@ soundfile
 
 # Vision
 opencv-python
-mediapipe
+# 0.10.x keeps the mp.solutions.hands API used by the hand detectors.
+mediapipe==0.10.14
 ultralytics
 
 # PyTorch
 # For NVIDIA GPU, install the CUDA-matched torch build from PyTorch first.
-torch
-torchvision
+# torchaudio 2.9+ needs torchcodec to save wav files, which breaks Demucs output.
+torch==2.8.0
+torchvision==0.23.0
+torchaudio==2.8.0
 
 # Audio stem separation
 demucs
