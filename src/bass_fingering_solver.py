@@ -1,6 +1,7 @@
 # guitar_note_solver.py
 from __future__ import annotations
 
+from bisect import bisect_left
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 
@@ -203,10 +204,22 @@ def solve_notes_greedy(
     return solved
 
 
+def has_onset_near(t: float, onsets: List[float], tol: float) -> bool:
+    i = bisect_left(onsets, t - tol)
+    return i < len(onsets) and onsets[i] <= t + tol
+
+
 def merge_same_position_notes(
     solved_notes: List[SolvedNote],
-    max_gap: float = 0.05
+    max_gap: float = 0.05,
+    onsets: Optional[List[float]] = None,
+    onset_tol: float = 0.06,
 ) -> List[SolvedNote]:
+    """
+    Join pieces of one sustained note that pitch tracking split apart.
+    With onset times, a note that starts at a detected attack is a re-played
+    note (e.g. repeated eighth notes) and is kept separate.
+    """
     if not solved_notes:
         return []
 
@@ -221,8 +234,9 @@ def merge_same_position_notes(
             prev.fret == cur.fret
         )
         small_gap = (cur.t_on - prev.t_off) <= max_gap
+        re_attacked = onsets is not None and has_onset_near(cur.t_on, onsets, onset_tol)
 
-        if same_position and small_gap:
+        if same_position and small_gap and not re_attacked:
             prev.t_off = max(prev.t_off, cur.t_off)
             prev.audio_conf = max(prev.audio_conf, cur.audio_conf)
             prev.vision_conf = max(prev.vision_conf, cur.vision_conf)

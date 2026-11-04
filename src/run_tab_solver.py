@@ -7,6 +7,7 @@ from pathlib import Path
 from audio_vision_adapter import (
     load_json,
     load_audio_notes_from_audio_result,
+    load_onsets_from_audio_result,
     build_vision_events_from_audio_notes,
 )
 from bass_fingering_solver import (
@@ -49,7 +50,7 @@ def run_solve_tab(
         vision_events=vision_events,
         time_gate=max(left_window, right_window) + 0.05,
     )
-    solved = merge_same_position_notes(solved)
+    solved = merge_same_position_notes(solved, onsets=load_onsets_from_audio_result(audio_result_json))
 
     solved_dicts = solved_notes_to_dicts(solved)
 

@@ -108,10 +108,12 @@ def save_analysis_result(
     output_path: Path,
     notes: List[Dict[str, Any]],
     metadata: Dict[str, Any],
+    onsets: List[float] | None = None,
 ) -> None:
     """
     Save analysis JSON. Includes both a rich 'notes' section and a
     'midi_notes' section compatible with src/video_adapter.py.
+    'onsets' (attack times in seconds) is written when provided.
     """
     midi_notes = _build_midi_notes(notes)
 
@@ -135,6 +137,8 @@ def save_analysis_result(
         "notes": notes,
         "midi_notes": midi_notes,
     }
+    if onsets is not None:
+        data["onsets"] = onsets
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

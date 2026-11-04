@@ -2,6 +2,7 @@ from pathlib import Path
 
 from src.audio.pyin_pitch_analyzer import run_pyin_analysis
 from src.audio.audio_note_segmenter import detect_notes, save_analysis_result
+from src.audio.onset_detector import detect_onsets
 from src.audio_demucs_engine import AutotabAudioEngine, extract_bpm, extract_bpm_from_stems
 
 
@@ -116,6 +117,7 @@ def analyze_audio(
         max_midi_diff=max_midi_diff,
         min_duration_sec=min_duration_sec,
     )
+    onsets = detect_onsets(bass_audio_path)
 
     video_exts = {".mp4", ".mov", ".mkv", ".avi"}
     source_type = "video" if source_path.suffix.lower() in video_exts else "audio"
@@ -140,6 +142,7 @@ def analyze_audio(
         output_path=output_json_path,
         notes=notes,
         metadata=metadata,
+        onsets=onsets,
     )
 
     print("\n" + "=" * 60)

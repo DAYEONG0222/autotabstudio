@@ -171,3 +171,12 @@ def load_audio_notes_from_audio_result(audio_result_json: str) -> List[Dict[str,
 
     notes.sort(key=lambda x: x["t_on"])
     return notes
+
+
+def load_onsets_from_audio_result(audio_result_json: str) -> List[float] | None:
+    """Returns onset times saved by run_audio_analysis.py, or None for older result files."""
+    data = load_json(audio_result_json)
+    onsets = data.get("onsets")
+    if onsets is None:
+        return None
+    return sorted(float(t) for t in onsets)
