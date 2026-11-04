@@ -5,11 +5,12 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 
 
+# 4현 베이스 표준 튜닝(E1-A1-D2-G2). 기타 아래 4줄(E2-A2-D3-G3)보다 한 옥타브 낮다.
 DEFAULT_OPEN_STRING_MIDI = {
-    1: 40,  # E2
-    2: 45,  # A2
-    3: 50,  # D3
-    4: 55,  # G3
+    1: 28,  # E1
+    2: 33,  # A1
+    3: 38,  # D2
+    4: 43,  # G2
 }
 
 
